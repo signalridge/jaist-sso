@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, resolve } from "node:path";
 
-type Manifest = {
+export type Manifest = {
   name: string;
   version: string;
   private?: boolean;
@@ -72,15 +72,13 @@ export async function waitForIntegrity(
   );
 }
 
-async function main(tag: string, verify = false): Promise<void> {
-  const manifest: Manifest = JSON.parse(readFileSync("package.json", "utf8"));
-  validateRelease(manifest, tag);
-  if (
-    execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim()
-  )
-    throw new Error("Release checkout must be clean");
+export function packRelease(directory: string): {
+  filename: string;
+  integrity: string;
+} {
   const packed: { filename: string; files: { path: string }[] }[] = JSON.parse(
     execFileSync("npm", ["pack", "--json", "--ignore-scripts"], {
+      cwd: directory,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "inherit"],
     }),
@@ -98,7 +96,20 @@ async function main(tag: string, verify = false): Promise<void> {
     )
   )
     throw new Error("Unexpected files in release archive");
-  const integrity = `sha512-${createHash("sha512").update(readFileSync(archive.filename)).digest("base64")}`;
+  const filename = resolve(directory, archive.filename);
+  const integrity = `sha512-${createHash("sha512").update(readFileSync(filename)).digest("base64")}`;
+  return { filename, integrity };
+}
+
+async function main(tag: string, verify = false): Promise<void> {
+  const manifest: Manifest = JSON.parse(readFileSync("package.json", "utf8"));
+  validateRelease(manifest, tag);
+  if (
+    execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim()
+  )
+    throw new Error("Release checkout must be clean");
+  const archive = packRelease(process.cwd());
+  const { integrity } = archive;
   const lookup = async (): Promise<RegistryResult> => {
     const response = await fetch(
       `https://registry.npmjs.org/${encodeURIComponent(manifest.name)}/${manifest.version}`,

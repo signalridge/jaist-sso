@@ -29,10 +29,15 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "check": "biome check --error-on-warnings . && tsc --noEmit && bun test",
-    "pack:check": "npm pack --dry-run --ignore-scripts"
+    "pack:check": "npm pack --dry-run --ignore-scripts",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "version-packages": "changeset version && bun install --lockfile-only && bun run format",
+    "publish-packages": "bun scripts/publish-changesets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
+    "@changesets/cli": "2.31.1",
     "@types/bun": "1.4.4",
     "typescript": "7.0.2"
   },
