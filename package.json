@@ -1,6 +1,6 @@
 {
   "name": "@signalridge/jaist-sso",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "JAIST SAML SSO with certificate, authenticator OTP and email OTP challenges",
   "type": "module",
   "license": "MIT",

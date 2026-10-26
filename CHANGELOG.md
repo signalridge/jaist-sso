@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+### Patch Changes
+
+- 28a974f: Simplify installation and authentication documentation.
+
 ## 0.1.1
 
 ### Patch Changes
