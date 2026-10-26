@@ -76,4 +76,19 @@ jobs:
         if: steps.changesets.outputs.pullRequestNumber != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run ci.yml --ref changeset-release/main
+          RELEASE_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+        run: |
+          pr_sha="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$RELEASE_PR" --jq '.head.sha')"
+          gh workflow run ci.yml --ref changeset-release/main
+          # GitHub can also hold bot-created PR runs for approval. Only approve
+          # this workflow's own same-repository release PR at its current SHA.
+          for attempt in 1 2 3 4 5 6; do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=pull_request&per_page=20" | jq -r --arg sha "$pr_sha" --argjson pr "$RELEASE_PR" '.workflow_runs[] | select(.head_sha == $sha and .head_branch == "changeset-release/main" and .actor.login == "github-actions[bot]" and .conclusion == "action_required" and any(.pull_requests[]; .number == $pr and .head.repo.id == .base.repo.id)) | .id')"
+            if [ -n "$runs" ]; then
+              while IFS= read -r run_id; do
+                gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/approve"
+              done <<< "$runs"
+              break
+            fi
+            sleep 5
+          done
