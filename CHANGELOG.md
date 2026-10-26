@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+### Patch Changes
+
+- 7297c4c: Document installation and CLI usage from npm, headless credential pipes, and the Changesets release workflow.
+
 ## 0.1.0
 
 - Add a JAIST-SSO transaction API with password and certificate, Authenticator OTP
