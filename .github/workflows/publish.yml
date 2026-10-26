@@ -1,0 +1,56 @@
+name: Publish
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref_type == 'tag'
+    environment: npm-publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - run: npm install --global npm@11.19.1
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - name: Validate release and pack exact contents
+        id: pack
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: bun scripts/release.ts "$RELEASE_TAG"
+      - name: Publish with npm Trusted Publishing
+        if: steps.pack.outputs.publish == 'true'
+        env:
+          ARCHIVE: ${{ steps.pack.outputs.filename }}
+        run: npm publish "$ARCHIVE" --access public --provenance --ignore-scripts
+      - name: Verify registry contents
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: bun scripts/release.ts "$RELEASE_TAG" --verify
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          ARCHIVE: ${{ steps.pack.outputs.filename }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$ARCHIVE" --clobber
+          else
+            gh release create "$RELEASE_TAG" "$ARCHIVE" --verify-tag --title "$RELEASE_TAG" --notes-file CHANGELOG.md
+          fi

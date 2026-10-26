@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { interruptible } from "../src/errors.ts";
 import { authenticate, HttpSession } from "../src/index.ts";
 import { fixture, SERVICE } from "./fixture.ts";
 
@@ -10,6 +11,18 @@ test("the total deadline interrupts an uncooperative custom transport", async ()
   await expect(
     authenticate({ session, request: { url: SERVICE }, timeoutMs: 10 }),
   ).rejects.toMatchObject({ code: "timeout" });
+});
+
+test("a promise is still observed when its producer aborts before returning it", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  await expect(
+    interruptible(
+      Promise.reject(new Error("synthetic-provider-error")),
+      controller.signal,
+    ),
+  ).rejects.toMatchObject({ code: "cancelled" });
+  await Bun.sleep(0);
 });
 test("unknown challenges stop without submitting credentials", async () => {
   const mock = fixture();

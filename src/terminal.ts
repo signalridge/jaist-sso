@@ -25,7 +25,7 @@ export function createTerminalHandler(
         "input-required",
         "Interactive terminal is unavailable",
       );
-    let muted = false;
+    const muted = hidden;
     const sink = new Writable({
       write(chunk, _encoding, callback) {
         if (!muted) output.write(chunk);
@@ -42,14 +42,14 @@ export function createTerminalHandler(
     const combined = AbortSignal.any([signal, cancel.signal]);
     rl.once("SIGINT", () => cancel.abort());
     try {
-      const answer = rl.question(label, { signal: combined });
-      muted = hidden;
+      // Never enable echo, including while buffered input is being resumed.
+      if (hidden) output.write(label);
+      const answer = rl.question(hidden ? "" : label, { signal: combined });
       return await answer;
     } catch {
       checkAbort(combined);
       throw new AuthenticationError("cancelled", "Input cancelled");
     } finally {
-      muted = false;
       rl.close();
       sink.destroy();
       if (hidden) output.write("\n");

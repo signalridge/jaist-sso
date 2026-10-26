@@ -10,3 +10,4 @@ dist/
 *.key
 *.har
 .DS_Store
+*.tgz

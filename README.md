@@ -6,7 +6,14 @@ calling service. It does not create a VPN tunnel or assume a credential store.
 
 TypeScript runs directly on Bun 1.4.4 or later. There are **no third-party runtime
 dependencies**. Biome, TypeScript and Bun type definitions are development-only.
-The package is private and unlicensed; public publishing is disabled.
+The package is published under the MIT license.
+
+## Installation
+
+```sh
+bun add @signalridge/jaist-sso
+bunx @signalridge/jaist-sso --help
+```
 
 ## Development
 
@@ -142,3 +149,18 @@ Keep real credentials, certificates, HAR files and HTTP dumps out of Git, tests,
 CI and issue reports. Tests and logs must use synthetic values. Do not disable TLS
 verification or automatic redirect checks. A consuming daemon should pause after
 authentication rejection rather than starting repeated login transactions.
+
+## Releases
+
+Run `bun run check` and `bun run pack:check` before creating a version tag.
+The tag must equal `v` followed by the manifest version. `publish.yml` validates
+the clean checkout, archive allowlist and npm integrity, publishes with npm Trusted
+Publishing/OIDC and provenance, then creates the GitHub release. A published
+version is reused only when its contents match; changed contents require a new
+version. The first publication of a new npm name requires an authenticated
+bootstrap, followed by a Trusted Publisher binding to this repository,
+`publish.yml`, and the `npm-publish` environment. No long-lived npm token is used
+by the workflow.
+
+Use one `HttpSession` per transaction; do not run concurrent login flows through
+a shared session. Caller-supplied sessions remain caller-owned and must be closed.

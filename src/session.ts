@@ -137,6 +137,10 @@ export class CookieJar {
     for (const c of this.#matching(url)) values[c.name] ??= c.value;
     return values;
   }
+  revision(name: string, url: string): number {
+    const cookie = this.#matching(url).find((value) => value.name === name);
+    return cookie ? cookie.order + 1 : 0;
+  }
   clear(): void {
     this.#cookies = [];
   }

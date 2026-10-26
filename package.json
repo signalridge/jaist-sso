@@ -1,10 +1,9 @@
 {
   "name": "@signalridge/jaist-sso",
   "version": "0.1.0",
-  "private": true,
   "description": "JAIST SAML SSO with certificate, authenticator OTP and email OTP challenges",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "bun@1.4.4",
   "engines": {
     "bun": ">=1.4.4"
@@ -19,7 +18,9 @@
   },
   "files": [
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "lint": "biome lint --error-on-warnings .",
@@ -27,11 +28,29 @@
     "format:check": "biome format .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "check": "biome check --error-on-warnings . && tsc --noEmit && bun test"
+    "check": "biome check --error-on-warnings . && tsc --noEmit && bun test",
+    "pack:check": "npm pack --dry-run --ignore-scripts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",
     "@types/bun": "1.4.4",
     "typescript": "7.0.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/signalridge/jaist-sso.git"
+  },
+  "homepage": "https://github.com/signalridge/jaist-sso#readme",
+  "bugs": {
+    "url": "https://github.com/signalridge/jaist-sso/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "jaist",
+    "saml",
+    "sso",
+    "bun"
+  ]
 }

@@ -31,7 +31,6 @@ export async function interruptible<T>(
   promise: Promise<T>,
   signal: AbortSignal,
 ): Promise<T> {
-  checkAbort(signal);
   return new Promise((resolve, reject) => {
     const aborted = () => {
       try {
@@ -44,5 +43,8 @@ export async function interruptible<T>(
     promise
       .then(resolve, reject)
       .finally(() => signal.removeEventListener("abort", aborted));
+    // Observe the promise even if its producer aborted synchronously. Otherwise
+    // a rejected provider/transport promise could become an unhandled rejection.
+    if (signal.aborted) aborted();
   });
 }

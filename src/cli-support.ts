@@ -177,7 +177,23 @@ export async function readCredentialInput(
 
 export function reportError(error: unknown): number {
   if (error instanceof AuthenticationError) {
-    process.stderr.write(`${error.code}: ${error.message}\n`);
+    const messages = {
+      "input-required": "Authentication requires additional input",
+      cancelled: "Authentication cancelled",
+      timeout: "Authentication timed out",
+      network: "Authentication network request failed",
+      rejected: "Authentication was rejected",
+      unsupported: "Authentication flow is not supported",
+      "unsafe-destination": "Authentication destination is not allowed",
+      "invalid-input": "Authentication input or options are invalid",
+    };
+    // Providers are application code and may throw even this exported class
+    // with sensitive messages. Never print an exception's message or stack.
+    if (!Object.hasOwn(messages, error.code)) {
+      process.stderr.write("invalid-input: Invalid authentication error\n");
+      return 1;
+    }
+    process.stderr.write(`${error.code}: ${messages[error.code]}\n`);
     return error.code === "input-required"
       ? 2
       : error.code === "cancelled"

@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import type { Writable } from "node:stream";
-import { parseCLI } from "../src/cli-support.ts";
+import { parseCLI, reportError } from "../src/cli-support.ts";
+import { AuthenticationError } from "../src/errors.ts";
 
 test("CLI help runs without credentials or a network connection", () => {
   const run = Bun.spawnSync([process.execPath, "src/cli.ts", "--help"], {
@@ -28,7 +29,27 @@ test("malformed credential JSON does not echo its contents", () => {
   expect(run.exitCode).toBe(1);
   expect(run.stdout.byteLength).toBe(0);
   expect(run.stderr.toString()).not.toContain("synthetic-private-input");
-  expect(run.stderr.toString()).toContain("Credential input is not JSON");
+  expect(run.stderr.toString()).toContain("invalid-input:");
+});
+
+test("provider AuthenticationError messages cannot expose secrets in CLI diagnostics", () => {
+  const original = process.stderr.write;
+  let written = "";
+  process.stderr.write = ((value: string | Uint8Array) => {
+    written += value.toString();
+    return true;
+  }) as typeof process.stderr.write;
+  try {
+    expect(
+      reportError(
+        new AuthenticationError("network", "synthetic-private-password"),
+      ),
+    ).toBe(1);
+  } finally {
+    process.stderr.write = original;
+  }
+  expect(written).toContain("network:");
+  expect(written).not.toContain("synthetic-private-password");
 });
 test("credential descriptor selection is unambiguous", () => {
   expect(parseCLI(["--credentials-fd", "3"]).fd).toBe(3);
