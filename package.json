@@ -1,0 +1,37 @@
+{
+  "name": "@signalridge/jaist-sso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JAIST SAML SSO with certificate, authenticator OTP and email OTP challenges",
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "bun@1.4.4",
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./terminal": "./src/terminal.ts",
+    "./cli-support": "./src/cli-support.ts"
+  },
+  "bin": {
+    "jaist-sso": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "biome lint --error-on-warnings .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "check": "biome check --error-on-warnings . && tsc --noEmit && bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  }
+}
