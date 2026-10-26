@@ -2,15 +2,12 @@
 
 [![npm](https://img.shields.io/npm/v/@signalridge/jaist-sso)](https://www.npmjs.com/package/@signalridge/jaist-sso)
 [![CI](https://github.com/signalridge/jaist-sso/actions/workflows/ci.yml/badge.svg)](https://github.com/signalridge/jaist-sso/actions/workflows/ci.yml)
-[MIT](LICENSE)
 
 JAIST-SSO authentication for Bun applications. The library completes password
 and second-factor authentication and returns the SAML POST callback for the
 calling service. It does not create a VPN tunnel or assume a credential store.
 
-TypeScript runs directly on Bun 1.4.4 or later. There are **no third-party runtime
-dependencies**. Biome, TypeScript, Bun type definitions and Changesets are development-only.
-The package is published under the MIT license.
+Requires Bun 1.4.4 or later.
 
 ## Installation
 
@@ -162,22 +159,7 @@ a shared session. Caller-supplied sessions remain caller-owned and must be close
 ```sh
 bun install --frozen-lockfile
 bun run check
-bun run format
 ```
 
-`check` runs Biome lint, formatting/import checks, strict TypeScript checking and
-the test suite. Individual commands are `lint`, `format:check`, `typecheck` and
-`test`. Tests generate synthetic certificates through the existing OpenSSL CLI;
-no JAIST credentials or network access are required by the tests. CI checks Linux
-and macOS. No compilation step is needed for running the library or CLI.
-
-## Releases
-
-Published versions are available on [npm](https://www.npmjs.com/package/@signalridge/jaist-sso)
-and [GitHub Releases](https://github.com/signalridge/jaist-sso/releases).
-To release a change, run `bun run changeset` and commit the generated entry.
-On `main`, GitHub Actions opens or updates a **Version Packages** PR. Merging it
-publishes the reviewed package through npm Trusted Publishing/OIDC with
-provenance, then creates the GitHub release and attaches the npm tarball.
-No manual tag or long-lived npm token is needed. See [CONTRIBUTING.md](https://github.com/signalridge/jaist-sso/blob/main/CONTRIBUTING.md)
-for versioning, checks and recovery.
+See [CONTRIBUTING.md](https://github.com/signalridge/jaist-sso/blob/main/CONTRIBUTING.md)
+for development, testing and the Changesets release workflow.
