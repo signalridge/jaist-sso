@@ -41,6 +41,37 @@ export function reconcileIntegrity(
   return false;
 }
 
+type RegistryResult = { status: number; data: unknown };
+export async function waitForIntegrity(
+  lookup: () => Promise<RegistryResult>,
+  integrity: string,
+  options: { attempts?: number; pause?: () => Promise<void> } = {},
+): Promise<void> {
+  const attempts = options.attempts ?? 60;
+  const pause = options.pause ?? (() => Bun.sleep(5_000));
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    let result: RegistryResult;
+    try {
+      result = await lookup();
+    } catch {
+      if (attempt === attempts - 1)
+        throw new Error("Registry verification timed out");
+      await pause();
+      continue;
+    }
+    if (result.status === 200) {
+      reconcileIntegrity(200, result.data, integrity);
+      return;
+    }
+    if (result.status !== 404 && result.status !== 429 && result.status < 500)
+      throw new Error("Registry verification failed");
+    if (attempt < attempts - 1) await pause();
+  }
+  throw new Error(
+    "Published version is not visible within the verification window",
+  );
+}
+
 async function main(tag: string, verify = false): Promise<void> {
   const manifest: Manifest = JSON.parse(readFileSync("package.json", "utf8"));
   validateRelease(manifest, tag);
@@ -68,14 +99,22 @@ async function main(tag: string, verify = false): Promise<void> {
   )
     throw new Error("Unexpected files in release archive");
   const integrity = `sha512-${createHash("sha512").update(readFileSync(archive.filename)).digest("base64")}`;
-  const response = await fetch(
-    `https://registry.npmjs.org/${encodeURIComponent(manifest.name)}/${manifest.version}`,
-    { signal: AbortSignal.timeout(15_000) },
-  );
-  const remote = response.status === 200 ? await response.json() : undefined;
-  const publish = reconcileIntegrity(response.status, remote, integrity);
-  if (verify && publish)
-    throw new Error("Published version is not visible in the registry yet");
+  const lookup = async (): Promise<RegistryResult> => {
+    const response = await fetch(
+      `https://registry.npmjs.org/${encodeURIComponent(manifest.name)}/${manifest.version}`,
+      { signal: AbortSignal.timeout(15_000) },
+    );
+    return {
+      status: response.status,
+      data: response.status === 200 ? await response.json() : undefined,
+    };
+  };
+  let publish = false;
+  if (verify) await waitForIntegrity(lookup, integrity);
+  else {
+    const result = await lookup();
+    publish = reconcileIntegrity(result.status, result.data, integrity);
+  }
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(
       process.env.GITHUB_OUTPUT,

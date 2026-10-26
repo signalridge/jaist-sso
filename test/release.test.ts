@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { reconcileIntegrity, validateRelease } from "../scripts/release.ts";
+import {
+  reconcileIntegrity,
+  validateRelease,
+  waitForIntegrity,
+} from "../scripts/release.ts";
 
 const manifest = {
   name: "@signalridge/jaist-sso",
@@ -7,6 +11,36 @@ const manifest = {
   license: "MIT",
   publishConfig: { access: "public" },
 };
+
+test("registry processing is retried without republishing", async () => {
+  let attempts = 0;
+  await waitForIntegrity(
+    async () =>
+      ++attempts < 3
+        ? { status: 404, data: undefined }
+        : { status: 200, data: { dist: { integrity: "sha512-synthetic" } } },
+    "sha512-synthetic",
+    { attempts: 3, pause: async () => {} },
+  );
+  expect(attempts).toBe(3);
+  await expect(
+    waitForIntegrity(
+      async () => ({ status: 404, data: undefined }),
+      "sha512-synthetic",
+      { attempts: 1 },
+    ),
+  ).rejects.toThrow();
+  await expect(
+    waitForIntegrity(
+      async () => ({
+        status: 200,
+        data: { dist: { integrity: "sha512-other" } },
+      }),
+      "sha512-synthetic",
+      { attempts: 1 },
+    ),
+  ).rejects.toThrow();
+});
 test("release tag must match public package metadata", () => {
   expect(() => validateRelease(manifest, "v0.1.0")).not.toThrow();
   expect(() => validateRelease(manifest, "main")).toThrow();
